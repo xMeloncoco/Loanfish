@@ -1,10 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { createPerson, getPerson, updatePerson } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { errorMessage, fileUrl } from '../lib/pocketbase'
-import { Thumb } from '../components/Thumb'
-import { CameraIcon } from '../components/Icons'
+import { errorMessage } from '../lib/pocketbase'
 import { Alert, Spinner } from '../components/ui'
 import { BackLink } from '../components/BackLink'
 
@@ -13,40 +11,24 @@ export function PersonForm() {
   const editing = Boolean(id)
   const navigate = useNavigate()
   const { user } = useAuth()
-  const fileInput = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading] = useState(editing)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
   const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
   const [notes, setNotes] = useState('')
-  const [avatar, setAvatar] = useState<File | null>(null)
-  const [removeAvatar, setRemoveAvatar] = useState(false)
-  const [preview, setPreview] = useState<string | undefined>()
 
   useEffect(() => {
     if (!id) return
     getPerson(id)
       .then((person) => {
         setName(person.name)
-        setEmail(person.email ?? '')
-        setPhone(person.phone ?? '')
         setNotes(person.notes ?? '')
-        setPreview(fileUrl(person, person.avatar, '100x100'))
       })
       .catch((err) => setError(errorMessage(err, 'Could not load this person.')))
       .finally(() => setLoading(false))
   }, [id])
-
-  useEffect(() => {
-    if (!avatar) return
-    const url = URL.createObjectURL(avatar)
-    setPreview(url)
-    return () => URL.revokeObjectURL(url)
-  }, [avatar])
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -54,14 +36,11 @@ export function PersonForm() {
     setBusy(true)
     setError('')
 
-    const body = new FormData()
-    body.set('user', user.id)
-    body.set('name', name.trim())
-    body.set('email', email.trim())
-    body.set('phone', phone.trim())
-    body.set('notes', notes.trim())
-    if (avatar) body.set('avatar', avatar)
-    else if (removeAvatar) body.set('avatar', '')
+    const body = {
+      user: user.id,
+      name: name.trim(),
+      notes: notes.trim(),
+    }
 
     try {
       const saved =
@@ -86,43 +65,6 @@ export function PersonForm() {
       </div>
 
       <form className="form" onSubmit={handleSubmit}>
-        <div className="image-picker">
-          <Thumb src={preview} name={name || '?'} size="lg" round />
-          <div className="btn-row">
-            <button
-              type="button"
-              className="btn btn--ghost btn--sm"
-              onClick={() => fileInput.current?.click()}
-            >
-              <CameraIcon />
-              {preview ? 'Change photo' : 'Add photo'}
-            </button>
-            {preview ? (
-              <button
-                type="button"
-                className="btn btn--danger btn--sm"
-                onClick={() => {
-                  setAvatar(null)
-                  setPreview(undefined)
-                  setRemoveAvatar(true)
-                  if (fileInput.current) fileInput.current.value = ''
-                }}
-              >
-                Remove
-              </button>
-            ) : null}
-          </div>
-          <input
-            ref={fileInput}
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              setAvatar(e.target.files?.[0] ?? null)
-              setRemoveAvatar(false)
-            }}
-          />
-        </div>
-
         <div className="field">
           <label className="field__label" htmlFor="person-name">
             Name
@@ -133,38 +75,9 @@ export function PersonForm() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={100}
+            autoFocus={!editing}
             required
           />
-        </div>
-
-        <div className="field-row">
-          <div className="field">
-            <label className="field__label" htmlFor="person-email">
-              Email <span className="field__hint">(optional)</span>
-            </label>
-            <input
-              id="person-email"
-              className="input"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              inputMode="email"
-            />
-          </div>
-          <div className="field">
-            <label className="field__label" htmlFor="person-phone">
-              Phone <span className="field__hint">(optional)</span>
-            </label>
-            <input
-              id="person-phone"
-              className="input"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              inputMode="tel"
-              maxLength={40}
-            />
-          </div>
         </div>
 
         <div className="field">
@@ -176,7 +89,7 @@ export function PersonForm() {
             className="textarea"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="How you know them, where they live, anything worth remembering."
+            placeholder="How you know them, how to reach them, anything worth remembering."
             maxLength={2000}
           />
         </div>

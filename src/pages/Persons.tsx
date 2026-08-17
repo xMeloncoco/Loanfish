@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listPersons } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { errorMessage, fileUrl } from '../lib/pocketbase'
+import { errorMessage } from '../lib/pocketbase'
 import type { PersonRecord } from '../lib/types'
 import { Thumb } from '../components/Thumb'
 import { ChevronRightIcon, PlusIcon } from '../components/Icons'
@@ -29,8 +29,7 @@ export function Persons() {
     return persons.filter(
       (person) =>
         person.name.toLowerCase().includes(needle) ||
-        (person.email ?? '').toLowerCase().includes(needle) ||
-        (person.phone ?? '').toLowerCase().includes(needle),
+        (person.notes ?? '').toLowerCase().includes(needle),
     )
   }, [persons, query])
 
@@ -73,15 +72,11 @@ export function Persons() {
         <div className="stack">
           {visible.map((person) => (
             <Link key={person.id} to={`/persons/${person.id}`} className="tile">
-              <Thumb
-                src={fileUrl(person, person.avatar, '100x100')}
-                name={person.name}
-                round
-              />
+              <Thumb name={person.name} round />
               <div className="tile__body">
                 <div className="tile__title">{person.name}</div>
-                {person.email || person.phone ? (
-                  <div className="tile__sub">{person.email || person.phone}</div>
+                {person.notes ? (
+                  <div className="tile__sub">{person.notes}</div>
                 ) : null}
               </div>
               <span className="chev">

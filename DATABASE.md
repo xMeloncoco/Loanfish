@@ -1,19 +1,23 @@
 # Loanfish — PocketBase schema
 
 Everything you need to create by hand in the PocketBase admin UI. Four collections:
-one built-in (`users`) and three you create (`persons`, `items`, `loans`).
+one built-in (`users`) and three you create (`lf_persons`, `lf_items`, `lf_loans`).
 
-**Create them in this order** — `items` and `loans` point at collections that must
-already exist:
+Your own collections are prefixed `lf_` so they group together in the admin sidebar
+and never collide with PocketBase's internal tables. `users` is the built-in auth
+collection and keeps its name.
+
+**Create them in this order** — `lf_items` and `lf_loans` point at collections that
+must already exist:
 
 1. `users` (already exists, just check it)
-2. `persons`
-3. `items`
-4. `loans`
+2. `lf_persons`
+3. `lf_items`
+4. `lf_loans`
 
-A note on the model: **a person is not a user.** `persons` are plain records owned
-by a user — contacts in your own private address book. They never log in, and two
-different users each tracking "Sam" will have two unrelated `persons` records.
+A note on the model: **a person is not a user.** `lf_persons` are plain records
+owned by a user — names in your own private list. They never log in, and two
+different users each tracking "Sam" will have two unrelated `lf_persons` records.
 
 ---
 
@@ -28,7 +32,7 @@ that these fields exist (they are defaults):
 | `email`    | email   | auth field                                |
 | `password` | password| auth field                                |
 | `name`     | text    | optional, shown in the app header         |
-| `avatar`   | file    | optional, single image                    |
+| `avatar`   | file    | optional, unused by the app               |
 | `verified` | bool    | auto                                      |
 
 **Options to check** (Collection → Options):
@@ -43,18 +47,19 @@ that these fields exist (they are defaults):
 
 ---
 
-## 2. `persons` — your private address book
+## 2. `lf_persons` — the people you lend to and borrow from
 
-**Type:** Base collection. **Name:** `persons`
+**Type:** Base collection. **Name:** `lf_persons`
 
-| Field    | Type                 | Required | Settings                                                                                     |
-| -------- | -------------------- | :------: | -------------------------------------------------------------------------------------------- |
-| `user`   | Relation → `users`   |   yes    | Max select **1** (single), **Cascade delete: ON**                                              |
-| `name`   | Plain text           |   yes    | Min 1, Max 100                                                                                 |
-| `email`  | Email                |    no    | —                                                                                              |
-| `phone`  | Plain text           |    no    | Max 40                                                                                         |
-| `notes`  | Plain text           |    no    | Max 2000                                                                                       |
-| `avatar` | File                 |    no    | Max files **1**, Max size 5 MB, MIME types `image/jpeg`, `image/png`, `image/webp`, `image/gif`; thumb `100x100` |
+| Field   | Type               | Required | Settings                                          |
+| ------- | ------------------ | :------: | -------------------------------------------------- |
+| `user`  | Relation → `users` |   yes    | Max select **1** (single), **Cascade delete: ON**   |
+| `name`  | Plain text         |   yes    | Min 1, Max 100                                      |
+| `notes` | Plain text         |    no    | Max 2000                                            |
+
+That's the whole thing — a name and a free-text note. Anything else you want to
+remember about someone (how to reach them, where they live, how you know them)
+goes in `notes`, which the app shows on their page.
 
 > **Cascade delete ON** on `user` means: delete the account, and their persons go
 > with it. That's what you want here — nobody else can see them anyway.
@@ -73,25 +78,19 @@ that these fields exist (they are defaults):
 > **0.23 and newer**. On older versions use `@request.data.user` instead. Everything
 > else in this document is identical across versions.
 
-**Indexes** (Collection → Indexes → New index):
-
-```sql
-CREATE INDEX idx_persons_user ON persons (user)
-```
-
 ---
 
-## 3. `items` — the things being tracked
+## 3. `lf_items` — the things being tracked
 
-**Type:** Base collection. **Name:** `items`
+**Type:** Base collection. **Name:** `lf_items`
 
-| Field          | Type                 | Required | Settings                                                                                     |
-| -------------- | -------------------- | :------: | -------------------------------------------------------------------------------------------- |
-| `user`         | Relation → `users`   |   yes    | Max select **1**, **Cascade delete: ON**                                                       |
-| `name`         | Plain text           |   yes    | Min 1, Max 120                                                                                 |
-| `description`  | Plain text           |    no    | Max 2000                                                                                       |
-| `image`        | File                 |    no    | Max files **1**, Max size 5 MB, MIME types `image/jpeg`, `image/png`, `image/webp`, `image/gif`; thumbs `100x100`, `600x0` |
-| `owner_person` | Relation → `persons` |    no    | Max select **1**, **Cascade delete: OFF**                                                      |
+| Field          | Type                    | Required | Settings                                                                                     |
+| -------------- | ----------------------- | :------: | -------------------------------------------------------------------------------------------- |
+| `user`         | Relation → `users`      |   yes    | Max select **1**, **Cascade delete: ON**                                                       |
+| `name`         | Plain text              |   yes    | Min 1, Max 120                                                                                 |
+| `description`  | Plain text              |    no    | Max 2000                                                                                       |
+| `image`        | File                    |    no    | Max files **1**, Max size 5 MB, MIME types `image/jpeg`, `image/png`, `image/webp`, `image/gif`; thumbs `100x100`, `600x0` |
+| `owner_person` | Relation → `lf_persons` |    no    | Max select **1**, **Cascade delete: OFF**                                                      |
 
 **How ownership works — the one thing to get right:**
 
@@ -120,30 +119,23 @@ note at the bottom.
 | Update | `@request.auth.id != "" && user = @request.auth.id`        |
 | Delete | `@request.auth.id != "" && user = @request.auth.id`        |
 
-**Indexes:**
-
-```sql
-CREATE INDEX idx_items_user ON items (user)
-CREATE INDEX idx_items_owner_person ON items (owner_person)
-```
-
 ---
 
-## 4. `loans` — the actual lending records
+## 4. `lf_loans` — the actual lending records
 
-**Type:** Base collection. **Name:** `loans`
+**Type:** Base collection. **Name:** `lf_loans`
 
-| Field           | Type                 | Required | Settings                                                              |
-| --------------- | -------------------- | :------: | ---------------------------------------------------------------------- |
-| `user`          | Relation → `users`   |   yes    | Max select **1**, **Cascade delete: ON**                                |
-| `item`          | Relation → `items`   |   yes    | Max select **1**, **Cascade delete: ON**                                |
-| `person`        | Relation → `persons` |   yes    | Max select **1**, **Cascade delete: OFF**                               |
-| `direction`     | Select               |   yes    | Max select **1**, values: `lent_out`, `borrowed`                        |
-| `status`        | Select               |   yes    | Max select **1**, values: `active`, `returned`, `lost`                  |
-| `start_date`    | Date                 |   yes    | —                                                                       |
-| `due_date`      | Date                 |    no    | The *supposed* return date. Blank = open-ended.                         |
-| `returned_date` | Date                 |    no    | Filled in when the loan is closed.                                      |
-| `notes`         | Plain text           |    no    | Max 5000. Paste agreements here.                                        |
+| Field           | Type                    | Required | Settings                                                              |
+| --------------- | ----------------------- | :------: | ---------------------------------------------------------------------- |
+| `user`          | Relation → `users`      |   yes    | Max select **1**, **Cascade delete: ON**                                |
+| `item`          | Relation → `lf_items`   |   yes    | Max select **1**, **Cascade delete: ON**                                |
+| `person`        | Relation → `lf_persons` |   yes    | Max select **1**, **Cascade delete: OFF**                               |
+| `direction`     | Select                  |   yes    | Max select **1**, values: `lent_out`, `borrowed`                        |
+| `status`        | Select                  |   yes    | Max select **1**, values: `active`, `returned`, `lost`                  |
+| `start_date`    | Date                    |   yes    | —                                                                       |
+| `due_date`      | Date                    |    no    | The *supposed* return date. Blank = open-ended.                         |
+| `returned_date` | Date                    |    no    | Filled in when the loan is closed.                                      |
+| `notes`         | Plain text              |    no    | Max 5000. Paste agreements here.                                        |
 
 **Field meanings:**
 
@@ -186,7 +178,7 @@ Create and Update:
 @request.auth.id != "" && user = @request.auth.id && item.user = @request.auth.id && person.user = @request.auth.id
 ```
 
-The same trick works on `items` for `owner_person`:
+The same trick works on `lf_items` for `owner_person`:
 
 ```
 @request.auth.id != "" && @request.body.user = @request.auth.id && (owner_person = "" || owner_person.user = @request.auth.id)
@@ -195,33 +187,57 @@ The same trick works on `items` for `owner_person`:
 The app never sends such a request — this is purely defence against someone
 poking the API directly with their own token.
 
-**Indexes:**
+---
+
+## Indexes — optional, skip them if you like
+
+An index is a lookup shortcut the database keeps so it doesn't have to scan every
+row to answer a query. **They are a speed optimization and nothing else.** The app
+behaves identically with or without them, no field or rule depends on them, and
+for a personal lending tracker — tens or hundreds of records — you will not be
+able to feel the difference. Nothing in the app breaks if you never add a single
+one.
+
+So: **skip this section for now.** If a list ever feels slow once you have a few
+thousand loans, come back and add them.
+
+If you do want them, in the admin UI open the collection → **Edit collection** →
+scroll to **Indexes** → **+ New index**, and paste one statement per index:
 
 ```sql
-CREATE INDEX idx_loans_user_status ON loans (user, status)
-CREATE INDEX idx_loans_item ON loans (item)
-CREATE INDEX idx_loans_person ON loans (person)
-CREATE INDEX idx_loans_due_date ON loans (due_date)
+-- lf_persons
+CREATE INDEX idx_lf_persons_user ON lf_persons (user)
+
+-- lf_items
+CREATE INDEX idx_lf_items_user ON lf_items (user)
+CREATE INDEX idx_lf_items_owner_person ON lf_items (owner_person)
+
+-- lf_loans
+CREATE INDEX idx_lf_loans_user_status ON lf_loans (user, status)
+CREATE INDEX idx_lf_loans_item ON lf_loans (item)
+CREATE INDEX idx_lf_loans_person ON lf_loans (person)
 ```
 
-The first one is the important one — the front page queries
-`user = X && status = "active"` on every load.
+The only one that would ever really earn its keep is
+`idx_lf_loans_user_status`, because the front page runs
+`user = X && status = "active"` on every single load. If you add just one, add
+that one.
 
 ---
 
 ## How it fits together
 
 ```
-users (1) ──< persons        a user's private contacts
-users (1) ──< items          the things, each optionally owned by a person
-users (1) ──< loans          the lending records
+users (1) ──< lf_persons        a user's private list of people
+users (1) ──< lf_items          the things, each optionally owned by a person
+users (1) ──< lf_loans          the lending records
 
-items (1) ──< loans          an item can be loaned many times over its life
-persons (1) ──< loans        a person can be involved in many loans
-persons (0..1) ──< items     owner_person: empty = the user owns it
+lf_items (1) ──< lf_loans       an item can be loaned many times over its life
+lf_persons (1) ──< lf_loans     a person can be involved in many loans
+lf_persons (0..1) ──< lf_items  owner_person: empty = the user owns it
 ```
 
-The front page is two queries against `loans`:
+The front page is two queries against `lf_loans`:
 
 - **"Borrowed from others"** → `user = <me> && status = "active" && direction = "borrowed"`
 - **"Lent out to others"** → `user = <me> && status = "active" && direction = "lent_out"`
@@ -232,14 +248,14 @@ both with `expand=item,person`.
 
 ## Things worth knowing before you click around
 
-**Deleting a person.** Neither `loans.person` nor `items.owner_person` is
+**Deleting a person.** Neither `lf_loans.person` nor `lf_items.owner_person` is
 cascade-delete, but they behave *differently* on delete, and the difference comes
 from whether the field is required:
 
-- `items.owner_person` is **optional**, so PocketBase clears it. The item survives
-  and goes back to reading as yours.
-- `loans.person` is **required**, so PocketBase cannot clear it and **refuses the
-  delete**, with:
+- `lf_items.owner_person` is **optional**, so PocketBase clears it. The item
+  survives and goes back to reading as yours.
+- `lf_loans.person` is **required**, so PocketBase cannot clear it and **refuses
+  the delete**, with:
   `Failed to delete record. Make sure that the record is not part of a required relation reference.`
 
 That is deliberate — a loan with no counterparty is a meaningless record, so the
@@ -249,8 +265,9 @@ as one explicit action. If you delete a person from the PocketBase admin UI
 instead, you'll hit the 400 above and have to remove their loans by hand first.
 
 If you would rather deleting a person also silently wipe their loan history, set
-`loans.person` to **cascade delete** instead. Don't make `loans.person` optional
-to dodge the error — that just moves the problem to loans that point at nobody.
+`lf_loans.person` to **cascade delete** instead. Don't make `lf_loans.person`
+optional to dodge the error — that just moves the problem to loans that point at
+nobody.
 
 **Deleting an item** cascades to its loans, which is right — the loan history of a
 thing that no longer exists is not interesting.
@@ -261,10 +278,11 @@ loan started on the 3rd reads as the 3rd everywhere regardless of the viewer's
 timezone. If you enter dates by hand in the admin UI, the time component is
 ignored by the app.
 
-**File URLs.** Images are fetched with the SDK's `pb.files.getURL(record, filename,
-{ thumb: '100x100' })`. The thumb sizes listed in the tables above need to exist on
-the field or the thumbnail request falls back to the full-size original — it still
-works, it's just a larger download.
+**Item images.** The only file field the app uses is `lf_items.image`, fetched
+with `pb.files.getURL(record, filename, { thumb: '100x100' })`. The thumb sizes
+listed in the `lf_items` table need to exist on the field or the thumbnail request
+falls back to the full-size original — it still works, it's just a larger
+download.
 
 **Required-ness of `user`.** Every collection carries its own `user` relation
 rather than being reached through a join. That's what makes the one-line API rules

@@ -12,10 +12,7 @@ export interface UserRecord extends RecordModel {
 export interface PersonRecord extends RecordModel {
   user: string
   name: string
-  email?: string
-  phone?: string
   notes?: string
-  avatar?: string
 }
 
 export interface ItemRecord extends RecordModel {

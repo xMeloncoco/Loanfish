@@ -8,21 +8,25 @@ isn't mine**, and **who has my stuff**.
 
 ## The model in one paragraph
 
-A **person** is just an entry in your own address book — they never log in, never
-get an account, and never see anything. Two users tracking the same neighbour each
-have their own separate record for them. An **item** is a thing you track; by
-default it's yours, but it can be marked as belonging to one of your persons. A
-**loan** ties an item to a person in a direction (`lent_out` or `borrowed`), with a
-start date, an optional agreed return date, a status, and a notes field for pasting
-whatever you agreed.
+A **person** is just a name and a free-text note in your own private list — they
+never log in, never get an account, and never see anything. Two users tracking the
+same neighbour each have their own separate record for them. An **item** is a thing
+you track; by default it's yours, but it can be marked as belonging to one of your
+persons, and it can carry a photo. A **loan** ties an item to a person in a
+direction (`lent_out` or `borrowed`), with a start date, an optional agreed return
+date, a status, and a notes field for pasting whatever you agreed.
+
+The app's own collections are prefixed `lf_` (`lf_persons`, `lf_items`,
+`lf_loans`); `users` is PocketBase's built-in auth collection and keeps its name.
 
 ## Setup
 
 ### 1. Create the database
 
 Everything you need to build in PocketBase is in **[DATABASE.md](./DATABASE.md)** —
-collections, every field with its settings, API rules, and indexes, in the order
-they have to be created.
+collections, every field with its settings, and the API rules, in the order they
+have to be created. Indexes are covered too, but they're an optional speed
+tweak you can skip entirely.
 
 The schema in that document was built against PocketBase 0.30 and verified
 end-to-end: the collections create cleanly, the app's queries return what they

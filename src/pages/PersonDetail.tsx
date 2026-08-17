@@ -7,7 +7,7 @@ import {
   getPerson,
   listLoansForPerson,
 } from '../lib/api'
-import { errorMessage, fileUrl } from '../lib/pocketbase'
+import { errorMessage } from '../lib/pocketbase'
 import type { LoanRecord, PersonRecord } from '../lib/types'
 import { LoanCard } from '../components/LoanCard'
 import { Thumb } from '../components/Thumb'
@@ -85,12 +85,7 @@ export function PersonDetail() {
       <BackLink />
 
       <div className="detail-head">
-        <Thumb
-          src={fileUrl(person, person.avatar, '100x100')}
-          name={person.name}
-          size="lg"
-          round
-        />
+        <Thumb name={person.name} size="lg" round />
         <div className="detail-head__body">
           <h1>{person.name}</h1>
           <div className="detail-head__sub">
@@ -115,33 +110,6 @@ export function PersonDetail() {
           Delete
         </button>
       </div>
-
-      {person.email || person.phone ? (
-        <section className="section">
-          <dl className="card card--pad meta-list">
-            {person.email ? (
-              <div className="meta-row">
-                <dt>Email</dt>
-                <dd>
-                  <a className="link" href={`mailto:${person.email}`}>
-                    {person.email}
-                  </a>
-                </dd>
-              </div>
-            ) : null}
-            {person.phone ? (
-              <div className="meta-row">
-                <dt>Phone</dt>
-                <dd>
-                  <a className="link" href={`tel:${person.phone}`}>
-                    {person.phone}
-                  </a>
-                </dd>
-              </div>
-            ) : null}
-          </dl>
-        </section>
-      ) : null}
 
       {person.notes ? (
         <section className="section">

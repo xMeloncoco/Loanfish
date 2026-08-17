@@ -1,9 +1,12 @@
 import { pb } from './pocketbase'
 import type { ItemRecord, LoanRecord, LoanStatus, PersonRecord } from './types'
 
-const persons = () => pb.collection('persons')
-const items = () => pb.collection('items')
-const loans = () => pb.collection('loans')
+// Collections are prefixed so they sit together and never collide with
+// PocketBase's own tables. `users` is the built-in auth collection and keeps
+// its name.
+const persons = () => pb.collection('lf_persons')
+const items = () => pb.collection('lf_items')
+const loans = () => pb.collection('lf_loans')
 
 /** Escape a value for use inside a PocketBase filter string. */
 function quote(value: string): string {
