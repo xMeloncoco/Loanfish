@@ -1,12 +1,15 @@
 import { Link } from 'react-router-dom'
 import { fileUrl, formatDate } from '../lib/pocketbase'
-import { daysUntilDue, isOverdue, STATUS_LABELS, type LoanRecord } from '../lib/types'
+import { daysUntilDue, isOverdue, type LoanRecord } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { Thumb } from './Thumb'
 
 /** The "when is this due" pill. Only active loans get a countdown. */
 export function DueBadge({ loan }: { loan: LoanRecord }) {
+  const { t } = useI18n()
+
   if (loan.status !== 'active') {
-    const label = STATUS_LABELS[loan.status]
+    const label = t.status[loan.status]
     return (
       <span className={loan.status === 'returned' ? 'badge badge--ok' : 'badge badge--danger'}>
         {label}
@@ -15,20 +18,15 @@ export function DueBadge({ loan }: { loan: LoanRecord }) {
   }
 
   const days = daysUntilDue(loan)
-  if (days === null) return <span className="badge">No date</span>
+  if (days === null) return <span className="badge">{t.dueBadge.noDate}</span>
 
   if (days < 0) {
-    const late = Math.abs(days)
-    return (
-      <span className="badge badge--danger">
-        {late === 1 ? '1 day late' : `${late} days late`}
-      </span>
-    )
+    return <span className="badge badge--danger">{t.dueBadge.daysLate(Math.abs(days))}</span>
   }
-  if (days === 0) return <span className="badge badge--warn">Due today</span>
-  if (days === 1) return <span className="badge badge--warn">Due tomorrow</span>
-  if (days <= 7) return <span className="badge badge--warn">{days} days left</span>
-  return <span className="badge">Due {formatDate(loan.due_date)}</span>
+  if (days === 0) return <span className="badge badge--warn">{t.dueBadge.dueToday}</span>
+  if (days === 1) return <span className="badge badge--warn">{t.dueBadge.dueTomorrow}</span>
+  if (days <= 7) return <span className="badge badge--warn">{t.dueBadge.daysLeft(days)}</span>
+  return <span className="badge">{t.dueBadge.due(formatDate(loan.due_date))}</span>
 }
 
 interface LoanCardProps {
@@ -38,14 +36,14 @@ interface LoanCardProps {
 }
 
 export function LoanCard({ loan, subtitle }: LoanCardProps) {
+  const { t } = useI18n()
   const item = loan.expand?.item
   const person = loan.expand?.person
   const image = item ? fileUrl(item, item.image, '100x100') : undefined
 
-  const counterparty = person?.name ?? 'Unknown person'
+  const counterparty = person?.name ?? t.loanCard.unknownPerson
   const line =
-    subtitle ??
-    (loan.direction === 'lent_out' ? `With ${counterparty}` : `From ${counterparty}`)
+    subtitle ?? (loan.direction === 'lent_out' ? t.loanCard.with(counterparty) : t.loanCard.from(counterparty))
 
   return (
     <Link
@@ -54,9 +52,9 @@ export function LoanCard({ loan, subtitle }: LoanCardProps) {
     >
       <Thumb src={image} name={item?.name ?? '?'} />
       <div className="loan__body">
-        <div className="loan__title">{item?.name ?? 'Deleted item'}</div>
+        <div className="loan__title">{item?.name ?? t.loanCard.deletedItem}</div>
         <div className="loan__meta">
-          {line} · since {formatDate(loan.start_date)}
+          {line} · {t.loanCard.since(formatDate(loan.start_date))}
         </div>
       </div>
       <div className="loan__side">

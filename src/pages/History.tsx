@@ -4,35 +4,37 @@ import { listLoans } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { errorMessage } from '../lib/pocketbase'
 import type { LoanRecord } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { LoanCard } from '../components/LoanCard'
 import { PlusIcon } from '../components/Icons'
 import { Alert, Empty, Spinner } from '../components/ui'
 
 type Filter = 'all' | 'active' | 'returned' | 'lost' | 'lent_out' | 'borrowed'
 
-const FILTERS: [Filter, string][] = [
-  ['all', 'All'],
-  ['active', 'Still out'],
-  ['returned', 'Returned'],
-  ['lost', 'Lost'],
-  ['lent_out', 'Lent out'],
-  ['borrowed', 'Borrowed'],
-]
-
 export function History() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [loans, setLoans] = useState<LoanRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
 
+  const FILTERS: [Filter, string][] = [
+    ['all', t.history.filterAll],
+    ['active', t.history.filterActive],
+    ['returned', t.history.filterReturned],
+    ['lost', t.history.filterLost],
+    ['lent_out', t.history.filterLentOut],
+    ['borrowed', t.history.filterBorrowed],
+  ]
+
   useEffect(() => {
     if (!user) return
     listLoans(user.id)
       .then(setLoans)
-      .catch((err) => setError(errorMessage(err, 'Could not load your loans.')))
+      .catch((err) => setError(errorMessage(err, t.history.couldNotLoad)))
       .finally(() => setLoading(false))
-  }, [user])
+  }, [user, t])
 
   const visible = useMemo(() => {
     switch (filter) {
@@ -52,12 +54,12 @@ export function History() {
     <>
       <div className="page-head">
         <div className="page-head__text">
-          <h1>History</h1>
-          <p>Every loan you have recorded.</p>
+          <h1>{t.history.title}</h1>
+          <p>{t.history.subtitle}</p>
         </div>
         <Link to="/loans/new" className="btn btn--sm">
           <PlusIcon />
-          Loan
+          {t.history.loanButton}
         </Link>
       </div>
 
@@ -80,11 +82,11 @@ export function History() {
       ) : null}
 
       {loans.length === 0 ? (
-        <Empty icon="🗂️" title="No loans yet">
-          Once you record a loan it stays here, even after it comes back.
+        <Empty icon="🗂️" title={t.history.noLoansTitle}>
+          {t.history.noLoansBody}
         </Empty>
       ) : visible.length === 0 ? (
-        <Empty icon="🔍" title="Nothing in this filter" />
+        <Empty icon="🔍" title={t.history.noMatchTitle} />
       ) : (
         <div className="stack">
           {visible.map((loan) => (

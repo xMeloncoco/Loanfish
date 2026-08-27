@@ -4,12 +4,14 @@ import { listPersons } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { errorMessage } from '../lib/pocketbase'
 import type { PersonRecord } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { Thumb } from '../components/Thumb'
 import { ChevronRightIcon, PlusIcon } from '../components/Icons'
 import { Alert, Empty, Spinner } from '../components/ui'
 
 export function Persons() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [persons, setPersons] = useState<PersonRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -19,9 +21,9 @@ export function Persons() {
     if (!user) return
     listPersons(user.id)
       .then(setPersons)
-      .catch((err) => setError(errorMessage(err, 'Could not load your people.')))
+      .catch((err) => setError(errorMessage(err, t.persons.couldNotLoad)))
       .finally(() => setLoading(false))
-  }, [user])
+  }, [user, t])
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -39,12 +41,12 @@ export function Persons() {
     <>
       <div className="page-head">
         <div className="page-head__text">
-          <h1>People</h1>
-          <p>Your own list. They don't need an account.</p>
+          <h1>{t.persons.title}</h1>
+          <p>{t.persons.subtitle}</p>
         </div>
         <Link to="/persons/new" className="btn btn--sm">
           <PlusIcon />
-          Person
+          {t.persons.personButton}
         </Link>
       </div>
 
@@ -54,19 +56,19 @@ export function Persons() {
         <input
           className="input search"
           type="search"
-          placeholder="Search people…"
+          placeholder={t.persons.searchPlaceholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
       ) : null}
 
       {persons.length === 0 ? (
-        <Empty icon="🧑‍🤝‍🧑" title="No people yet">
-          Add the people you lend things to and borrow things from.
+        <Empty icon="🧑‍🤝‍🧑" title={t.persons.noPeopleTitle}>
+          {t.persons.noPeopleBody}
         </Empty>
       ) : visible.length === 0 ? (
-        <Empty icon="🔍" title="Nothing matches">
-          Try a different search.
+        <Empty icon="🔍" title={t.persons.noMatchTitle}>
+          {t.persons.noMatchBody}
         </Empty>
       ) : (
         <div className="stack">

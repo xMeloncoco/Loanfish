@@ -4,6 +4,7 @@ import { createItem, getItem, listPersons, updateItem } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { errorMessage, fileUrl } from '../lib/pocketbase'
 import type { ItemRecord, PersonRecord } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { Thumb } from '../components/Thumb'
 import { CameraIcon } from '../components/Icons'
 import { Alert, Spinner } from '../components/ui'
@@ -14,6 +15,7 @@ export function ItemForm() {
   const editing = Boolean(id)
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useI18n()
   const [searchParams] = useSearchParams()
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -47,13 +49,13 @@ export function ItemForm() {
           setPreview(fileUrl(item, item.image, '600x0'))
         }
       } catch (err) {
-        setError(errorMessage(err, 'Could not load the form.'))
+        setError(errorMessage(err, t.itemForm.couldNotLoadForm))
       } finally {
         setLoading(false)
       }
     }
     void load()
-  }, [id, user])
+  }, [id, user, t])
 
   // Object URLs for the local preview have to be released by hand.
   useEffect(() => {
@@ -82,7 +84,7 @@ export function ItemForm() {
       const saved = editing && id ? await updateItem(id, body) : await createItem(body)
       navigate(`/items/${saved.id}`, { replace: true })
     } catch (err) {
-      setError(errorMessage(err, 'Could not save the item.'))
+      setError(errorMessage(err, t.itemForm.couldNotSave))
       setBusy(false)
     }
   }
@@ -94,7 +96,7 @@ export function ItemForm() {
       <BackLink />
       <div className="page-head">
         <div className="page-head__text">
-          <h1>{editing ? 'Edit item' : 'New item'}</h1>
+          <h1>{editing ? t.itemForm.editTitle : t.itemForm.newTitle}</h1>
         </div>
       </div>
 
@@ -108,7 +110,7 @@ export function ItemForm() {
               onClick={() => fileInput.current?.click()}
             >
               <CameraIcon />
-              {preview ? 'Change photo' : 'Add photo'}
+              {preview ? t.itemForm.changePhoto : t.itemForm.addPhoto}
             </button>
             {preview ? (
               <button
@@ -121,7 +123,7 @@ export function ItemForm() {
                   if (fileInput.current) fileInput.current.value = ''
                 }}
               >
-                Remove
+                {t.itemForm.remove}
               </button>
             ) : null}
           </div>
@@ -139,14 +141,14 @@ export function ItemForm() {
 
         <div className="field">
           <label className="field__label" htmlFor="item-name">
-            Name
+            {t.itemForm.nameLabel}
           </label>
           <input
             id="item-name"
             className="input"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Drill, Dune (book), camping stove…"
+            placeholder={t.itemForm.namePlaceholder}
             maxLength={120}
             required
           />
@@ -154,7 +156,7 @@ export function ItemForm() {
 
         <div className="field">
           <label className="field__label" htmlFor="item-owner">
-            Owner
+            {t.itemForm.ownerLabel}
           </label>
           <select
             id="item-owner"
@@ -162,28 +164,26 @@ export function ItemForm() {
             value={ownerPerson}
             onChange={(e) => setOwnerPerson(e.target.value)}
           >
-            <option value="">Me</option>
+            <option value="">{t.common.me}</option>
             {persons.map((person) => (
               <option key={person.id} value={person.id}>
                 {person.name}
               </option>
             ))}
           </select>
-          <span className="field__hint">
-            Who this actually belongs to. Leave as “Me” for your own things.
-          </span>
+          <span className="field__hint">{t.itemForm.ownerHint}</span>
         </div>
 
         <div className="field">
           <label className="field__label" htmlFor="item-description">
-            Description <span className="field__hint">(optional)</span>
+            {t.itemForm.descriptionLabel} <span className="field__hint">({t.common.optional})</span>
           </label>
           <textarea
             id="item-description"
             className="textarea"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Colour, model, serial number, distinguishing scratches…"
+            placeholder={t.itemForm.descriptionPlaceholder}
             maxLength={2000}
           />
         </div>
@@ -192,7 +192,7 @@ export function ItemForm() {
 
         <div className="btn-row">
           <button className="btn" type="submit" disabled={busy}>
-            {busy ? 'Saving…' : editing ? 'Save changes' : 'Add item'}
+            {busy ? t.common.saving : editing ? t.itemForm.saveChanges : t.itemForm.addItem}
           </button>
           <button
             className="btn btn--ghost"
@@ -200,14 +200,14 @@ export function ItemForm() {
             onClick={() => navigate(-1)}
             disabled={busy}
           >
-            Cancel
+            {t.common.cancel}
           </button>
         </div>
       </form>
 
       {existing ? null : (
         <p className="field__hint" style={{ marginTop: 16 }}>
-          You can record a loan for this item straight after saving it.
+          {t.itemForm.afterSaveHint}
         </p>
       )}
     </>

@@ -9,6 +9,7 @@ import {
 } from '../lib/api'
 import { errorMessage } from '../lib/pocketbase'
 import type { LoanRecord, PersonRecord } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { LoanCard } from '../components/LoanCard'
 import { Thumb } from '../components/Thumb'
 import { TrashIcon } from '../components/Icons'
@@ -18,6 +19,7 @@ import { BackLink } from '../components/BackLink'
 export function PersonDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t } = useI18n()
   const [person, setPerson] = useState<PersonRecord | null>(null)
   const [loans, setLoans] = useState<LoanRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -34,9 +36,9 @@ export function PersonDetail() {
         setPerson(record)
         setLoans(history)
       })
-      .catch((err) => setError(errorMessage(err, 'Could not load this person.')))
+      .catch((err) => setError(errorMessage(err, t.personDetail.couldNotLoad)))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, t])
 
   async function openConfirm() {
     if (!id) return
@@ -59,7 +61,7 @@ export function PersonDetail() {
       await deletePersonWithLoans(id)
       navigate('/persons', { replace: true })
     } catch (err) {
-      setError(errorMessage(err, 'Could not delete this person.'))
+      setError(errorMessage(err, t.personDetail.couldNotDelete))
       setBusy(false)
       setConfirming(false)
     }
@@ -70,7 +72,7 @@ export function PersonDetail() {
     return (
       <>
         <BackLink />
-        <Alert>{error || 'Person not found.'}</Alert>
+        <Alert>{error || t.personDetail.notFound}</Alert>
       </>
     )
   }
@@ -89,9 +91,7 @@ export function PersonDetail() {
         <div className="detail-head__body">
           <h1>{person.name}</h1>
           <div className="detail-head__sub">
-            {active.length === 0
-              ? 'Nothing outstanding'
-              : `${active.length} open ${active.length === 1 ? 'loan' : 'loans'}`}
+            {active.length === 0 ? t.personDetail.nothingOutstanding : t.personDetail.openLoans(active.length)}
           </div>
         </div>
       </div>
@@ -100,21 +100,21 @@ export function PersonDetail() {
 
       <div className="btn-row" style={{ marginBottom: 22 }}>
         <Link className="btn" to={`/loans/new?person=${person.id}`}>
-          Record a loan
+          {t.personDetail.recordALoan}
         </Link>
         <Link className="btn btn--ghost" to={`/persons/${person.id}/edit`}>
-          Edit
+          {t.common.edit}
         </Link>
         <button type="button" className="btn btn--danger" onClick={openConfirm}>
           <TrashIcon />
-          Delete
+          {t.common.delete}
         </button>
       </div>
 
       {person.notes ? (
         <section className="section">
           <div className="section__head">
-            <h2>Notes</h2>
+            <h2>{t.personDetail.notes}</h2>
           </div>
           <div className="notes">{person.notes}</div>
         </section>
@@ -122,15 +122,15 @@ export function PersonDetail() {
 
       <section className="section">
         <div className="section__head">
-          <h2>They have from you</h2>
+          <h2>{t.personDetail.theyHaveFromYou}</h2>
           <span className="section__count">{theyHave.length}</span>
         </div>
         {theyHave.length === 0 ? (
-          <Empty icon="📤" title="Nothing out with them" />
+          <Empty icon="📤" title={t.personDetail.nothingOutWithThem} />
         ) : (
           <div className="stack">
             {theyHave.map((loan) => (
-              <LoanCard key={loan.id} loan={loan} subtitle="Lent out" />
+              <LoanCard key={loan.id} loan={loan} subtitle={t.personDetail.lentOutSubtitle} />
             ))}
           </div>
         )}
@@ -138,15 +138,15 @@ export function PersonDetail() {
 
       <section className="section">
         <div className="section__head">
-          <h2>You have from them</h2>
+          <h2>{t.personDetail.youHaveFromThem}</h2>
           <span className="section__count">{iHave.length}</span>
         </div>
         {iHave.length === 0 ? (
-          <Empty icon="📥" title="Nothing borrowed from them" />
+          <Empty icon="📥" title={t.personDetail.nothingBorrowedFromThem} />
         ) : (
           <div className="stack">
             {iHave.map((loan) => (
-              <LoanCard key={loan.id} loan={loan} subtitle="Borrowed" />
+              <LoanCard key={loan.id} loan={loan} subtitle={t.personDetail.borrowedSubtitle} />
             ))}
           </div>
         )}
@@ -155,7 +155,7 @@ export function PersonDetail() {
       {past.length > 0 ? (
         <section className="section">
           <div className="section__head">
-            <h2>Settled</h2>
+            <h2>{t.personDetail.settled}</h2>
             <span className="section__count">{past.length}</span>
           </div>
           <div className="stack">
@@ -167,8 +167,8 @@ export function PersonDetail() {
       ) : null}
 
       {confirming ? (
-        <Modal title={`Delete ${person.name}?`} onClose={() => setConfirming(false)}>
-          <p>{describeDeletion(attached)}</p>
+        <Modal title={t.personDetail.deleteTitle(person.name)} onClose={() => setConfirming(false)}>
+          <p>{describeDeletion(attached, t)}</p>
           <div className="btn-row">
             <button
               type="button"
@@ -177,10 +177,10 @@ export function PersonDetail() {
               disabled={busy}
             >
               {busy
-                ? 'Deleting…'
+                ? t.common.deleting
                 : attached.loans > 0
-                  ? `Delete person and ${attached.loans} ${attached.loans === 1 ? 'loan' : 'loans'}`
-                  : 'Delete person'}
+                  ? t.personDetail.deletePersonAndLoans(attached.loans)
+                  : t.personDetail.deletePerson}
             </button>
             <button
               type="button"
@@ -188,7 +188,7 @@ export function PersonDetail() {
               onClick={() => setConfirming(false)}
               disabled={busy}
             >
-              Keep them
+              {t.personDetail.keepThem}
             </button>
           </div>
         </Modal>
@@ -201,22 +201,15 @@ export function PersonDetail() {
  * Spell out what actually happens, because the two relations behave
  * differently: loans require a person and so must go, items don't and so stay.
  */
-function describeDeletion({ loans, items }: { loans: number; items: number }): string {
+function describeDeletion(
+  { loans, items }: { loans: number; items: number },
+  t: ReturnType<typeof useI18n>['t'],
+): string {
   const sentences: string[] = []
 
-  if (loans > 0) {
-    sentences.push(
-      `A loan can't exist without the person on the other end, so their ${
-        loans === 1 ? 'loan will be deleted too' : `${loans} loans will be deleted too`
-      }.`,
-    )
-  }
-  if (items > 0) {
-    sentences.push(
-      `${items === 1 ? 'The item' : `The ${items} items`} marked as theirs will stay, listed as yours.`,
-    )
-  }
+  if (loans > 0) sentences.push(t.personDetail.deleteLoanSentence(loans))
+  if (items > 0) sentences.push(t.personDetail.deleteItemsSentence(items))
 
-  sentences.push('This cannot be undone.')
+  sentences.push(t.personDetail.cannotBeUndone)
   return sentences.join(' ')
 }

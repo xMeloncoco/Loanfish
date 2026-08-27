@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../lib/auth'
 import { errorMessage, toDateInput, todayInput, toPbDate } from '../lib/pocketbase'
 import type { ItemRecord, LoanDirection, PersonRecord } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { Alert, Empty, Spinner } from '../components/ui'
 import { BackLink } from '../components/BackLink'
 
@@ -19,6 +20,7 @@ export function LoanForm() {
   const editing = Boolean(id)
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { t } = useI18n()
   const [searchParams] = useSearchParams()
 
   const [items, setItems] = useState<ItemRecord[]>([])
@@ -66,13 +68,13 @@ export function LoanForm() {
           }
         }
       } catch (err) {
-        setError(errorMessage(err, 'Could not load the form.'))
+        setError(errorMessage(err, t.loanForm.couldNotLoadForm))
       } finally {
         setLoading(false)
       }
     }
     void load()
-  }, [id, user, searchParams])
+  }, [id, user, searchParams, t])
 
   const selectedItem = useMemo(
     () => items.find((item) => item.id === itemId),
@@ -93,7 +95,7 @@ export function LoanForm() {
     if (!user) return
 
     if (dueDate && startDate && dueDate < startDate) {
-      setError('The return date cannot be before the start date.')
+      setError(t.loanForm.dueBeforeStart)
       return
     }
 
@@ -120,7 +122,7 @@ export function LoanForm() {
 
       navigate(`/loans/${saved.id}`, { replace: true })
     } catch (err) {
-      setError(errorMessage(err, 'Could not save the loan.'))
+      setError(errorMessage(err, t.loanForm.couldNotSave))
       setBusy(false)
     }
   }
@@ -133,25 +135,25 @@ export function LoanForm() {
         <BackLink />
         <div className="page-head">
           <div className="page-head__text">
-            <h1>New loan</h1>
+            <h1>{t.loanForm.newLoanTitle}</h1>
           </div>
         </div>
-        <Empty icon="🧩" title="A loan needs an item and a person">
+        <Empty icon="🧩" title={t.loanForm.needsItemAndPersonTitle}>
           {items.length === 0 && persons.length === 0
-            ? 'Add at least one item and one person first.'
+            ? t.loanForm.needBoth
             : items.length === 0
-              ? 'Add an item first.'
-              : 'Add a person first.'}
+              ? t.loanForm.needItem
+              : t.loanForm.needPerson}
         </Empty>
         <div className="btn-row" style={{ marginTop: 16 }}>
           {items.length === 0 ? (
             <Link className="btn" to="/items/new">
-              Add an item
+              {t.loanForm.addAnItem}
             </Link>
           ) : null}
           {persons.length === 0 ? (
             <Link className="btn btn--ghost" to="/persons/new">
-              Add a person
+              {t.loanForm.addAPerson}
             </Link>
           ) : null}
         </div>
@@ -164,13 +166,13 @@ export function LoanForm() {
       <BackLink />
       <div className="page-head">
         <div className="page-head__text">
-          <h1>{editing ? 'Edit loan' : 'New loan'}</h1>
+          <h1>{editing ? t.loanForm.editLoanTitle : t.loanForm.newLoanTitle}</h1>
         </div>
       </div>
 
       <form className="form" onSubmit={handleSubmit}>
         <div className="field">
-          <span className="field__label">Which way?</span>
+          <span className="field__label">{t.loanForm.whichWay}</span>
           <div className="segmented">
             <button
               type="button"
@@ -178,7 +180,7 @@ export function LoanForm() {
               aria-pressed={direction === 'lent_out'}
               onClick={() => setDirection('lent_out')}
             >
-              I lent it out
+              {t.loanForm.lentItOut}
             </button>
             <button
               type="button"
@@ -186,14 +188,14 @@ export function LoanForm() {
               aria-pressed={direction === 'borrowed'}
               onClick={() => setDirection('borrowed')}
             >
-              I borrowed it
+              {t.loanForm.borrowedIt}
             </button>
           </div>
         </div>
 
         <div className="field">
           <label className="field__label" htmlFor="loan-item">
-            Item
+            {t.loanForm.itemLabel}
           </label>
           <select
             id="loan-item"
@@ -202,22 +204,24 @@ export function LoanForm() {
             onChange={(e) => setItemId(e.target.value)}
             required
           >
-            <option value="">Choose an item…</option>
+            <option value="">{t.loanForm.chooseItem}</option>
             {items.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name}
-                {item.expand?.owner_person ? ` (${item.expand.owner_person.name}'s)` : ''}
+                {item.expand?.owner_person
+                  ? ` ${t.loanForm.itemOwnerSuffix(item.expand.owner_person.name)}`
+                  : ''}
               </option>
             ))}
           </select>
           <span className="field__hint">
-            Not in the list? <Link className="link" to="/items/new">Add an item</Link>.
+            {t.loanForm.notInListItem} <Link className="link" to="/items/new">{t.loanForm.addAnItemLink}</Link>.
           </span>
         </div>
 
         <div className="field">
           <label className="field__label" htmlFor="loan-person">
-            {direction === 'lent_out' ? 'Who has it' : 'Who it came from'}
+            {direction === 'lent_out' ? t.loanForm.whoHasIt : t.loanForm.whoItCameFrom}
           </label>
           <select
             id="loan-person"
@@ -226,7 +230,7 @@ export function LoanForm() {
             onChange={(e) => setPersonId(e.target.value)}
             required
           >
-            <option value="">Choose a person…</option>
+            <option value="">{t.loanForm.choosePerson}</option>
             {persons.map((person) => (
               <option key={person.id} value={person.id}>
                 {person.name}
@@ -234,14 +238,14 @@ export function LoanForm() {
             ))}
           </select>
           <span className="field__hint">
-            Not in the list? <Link className="link" to="/persons/new">Add a person</Link>.
+            {t.loanForm.notInListPerson} <Link className="link" to="/persons/new">{t.loanForm.addAPersonLink}</Link>.
           </span>
         </div>
 
         <div className="field-row">
           <div className="field">
             <label className="field__label" htmlFor="loan-start">
-              Start date
+              {t.loanForm.startDate}
             </label>
             <input
               id="loan-start"
@@ -254,7 +258,7 @@ export function LoanForm() {
           </div>
           <div className="field">
             <label className="field__label" htmlFor="loan-due">
-              Back by <span className="field__hint">(optional)</span>
+              {t.loanForm.backBy} <span className="field__hint">({t.common.optional})</span>
             </label>
             <input
               id="loan-due"
@@ -269,14 +273,14 @@ export function LoanForm() {
 
         <div className="field">
           <label className="field__label" htmlFor="loan-notes">
-            Notes <span className="field__hint">(optional)</span>
+            {t.loanForm.notesLabel} <span className="field__hint">({t.common.optional})</span>
           </label>
           <textarea
             id="loan-notes"
             className="textarea"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Paste what you agreed — conditions, deposit, the message thread…"
+            placeholder={t.loanForm.notesPlaceholder}
             maxLength={5000}
             rows={6}
           />
@@ -291,8 +295,10 @@ export function LoanForm() {
               style={{ width: 18, height: 18, marginTop: 3, flexShrink: 0 }}
             />
             <span className="field__hint">
-              “{selectedItem?.name}” is currently marked as yours. Set its owner to{' '}
-              {persons.find((p) => p.id === personId)?.name} as well.
+              {t.loanForm.ownerUpdateHint(
+                selectedItem?.name ?? '',
+                persons.find((p) => p.id === personId)?.name,
+              )}
             </span>
           </label>
         ) : null}
@@ -301,7 +307,7 @@ export function LoanForm() {
 
         <div className="btn-row">
           <button className="btn" type="submit" disabled={busy}>
-            {busy ? 'Saving…' : editing ? 'Save changes' : 'Record loan'}
+            {busy ? t.common.saving : editing ? t.loanForm.saveChanges : t.loanForm.recordLoan}
           </button>
           <button
             className="btn btn--ghost"
@@ -309,7 +315,7 @@ export function LoanForm() {
             onClick={() => navigate(-1)}
             disabled={busy}
           >
-            Cancel
+            {t.common.cancel}
           </button>
         </div>
       </form>

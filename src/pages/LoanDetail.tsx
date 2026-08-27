@@ -8,13 +8,8 @@ import {
   todayInput,
   toPbDate,
 } from '../lib/pocketbase'
-import {
-  DIRECTION_LABELS,
-  STATUS_LABELS,
-  isOverdue,
-  type LoanRecord,
-  type LoanStatus,
-} from '../lib/types'
+import { isOverdue, type LoanRecord, type LoanStatus } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { DueBadge } from '../components/LoanCard'
 import { Thumb } from '../components/Thumb'
 import { TrashIcon } from '../components/Icons'
@@ -24,6 +19,7 @@ import { BackLink } from '../components/BackLink'
 export function LoanDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t } = useI18n()
   const [loan, setLoan] = useState<LoanRecord | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -35,9 +31,9 @@ export function LoanDetail() {
     setLoading(true)
     getLoan(id)
       .then(setLoan)
-      .catch((err) => setError(errorMessage(err, 'Could not load this loan.')))
+      .catch((err) => setError(errorMessage(err, t.loanDetail.couldNotLoad)))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, t])
 
   async function setStatus(status: LoanStatus) {
     if (!id) return
@@ -49,7 +45,7 @@ export function LoanDetail() {
       // item and person on screen.
       setLoan(await getLoan(updated.id))
     } catch (err) {
-      setError(errorMessage(err, 'Could not update the loan.'))
+      setError(errorMessage(err, t.loanDetail.couldNotUpdate))
     } finally {
       setBusy(false)
     }
@@ -62,7 +58,7 @@ export function LoanDetail() {
       await deleteLoan(id)
       navigate('/', { replace: true })
     } catch (err) {
-      setError(errorMessage(err, 'Could not delete the loan.'))
+      setError(errorMessage(err, t.loanDetail.couldNotDelete))
       setBusy(false)
       setConfirming(false)
     }
@@ -73,7 +69,7 @@ export function LoanDetail() {
     return (
       <>
         <BackLink />
-        <Alert>{error || 'Loan not found.'}</Alert>
+        <Alert>{error || t.loanDetail.notFound}</Alert>
       </>
     )
   }
@@ -92,15 +88,15 @@ export function LoanDetail() {
       <div className="detail-head">
         {image ? null : <Thumb name={item?.name ?? '?'} size="lg" />}
         <div className="detail-head__body">
-          <h1>{item?.name ?? 'Deleted item'}</h1>
+          <h1>{item?.name ?? t.loanDetail.deletedItem}</h1>
           <div className="detail-head__sub">
-            {lentOut ? 'Lent to' : 'Borrowed from'}{' '}
+            {lentOut ? t.loanDetail.lentTo : t.loanDetail.borrowedFrom}{' '}
             {person ? (
               <Link className="link" to={`/persons/${person.id}`}>
                 {person.name}
               </Link>
             ) : (
-              'someone who has been deleted'
+              t.loanDetail.deletedPerson
             )}
           </div>
         </div>
@@ -109,7 +105,7 @@ export function LoanDetail() {
       <div className="btn-row" style={{ marginBottom: 18 }}>
         <DueBadge loan={loan} />
         <span className={`badge ${lentOut ? 'badge--accent' : ''}`}>
-          {DIRECTION_LABELS[loan.direction]}
+          {t.direction[loan.direction]}
         </span>
       </div>
 
@@ -117,9 +113,7 @@ export function LoanDetail() {
 
       {isOverdue(loan) ? (
         <div style={{ marginBottom: 18 }}>
-          <Alert kind="info">
-            This was due back on {formatDate(loan.due_date)}.
-          </Alert>
+          <Alert kind="info">{t.loanDetail.dueBack(formatDate(loan.due_date))}</Alert>
         </div>
       ) : null}
 
@@ -133,7 +127,7 @@ export function LoanDetail() {
                 onClick={() => setStatus('returned')}
                 disabled={busy}
               >
-                {lentOut ? 'Got it back' : 'Gave it back'}
+                {lentOut ? t.loanDetail.gotItBack : t.loanDetail.gaveItBack}
               </button>
               <button
                 type="button"
@@ -141,7 +135,7 @@ export function LoanDetail() {
                 onClick={() => setStatus('lost')}
                 disabled={busy}
               >
-                Mark as lost
+                {t.loanDetail.markAsLost}
               </button>
             </>
           ) : (
@@ -151,11 +145,11 @@ export function LoanDetail() {
               onClick={() => setStatus('active')}
               disabled={busy}
             >
-              Re-open loan
+              {t.loanDetail.reopenLoan}
             </button>
           )}
           <Link className="btn btn--ghost" to={`/loans/${loan.id}/edit`}>
-            Edit
+            {t.common.edit}
           </Link>
           <button
             type="button"
@@ -164,7 +158,7 @@ export function LoanDetail() {
             disabled={busy}
           >
             <TrashIcon />
-            Delete
+            {t.common.delete}
           </button>
         </div>
       </section>
@@ -172,26 +166,26 @@ export function LoanDetail() {
       <section className="section">
         <dl className="card card--pad meta-list">
           <div className="meta-row">
-            <dt>Status</dt>
-            <dd>{STATUS_LABELS[loan.status]}</dd>
+            <dt>{t.loanDetail.statusLabel}</dt>
+            <dd>{t.status[loan.status]}</dd>
           </div>
           <div className="meta-row">
-            <dt>Started</dt>
+            <dt>{t.loanDetail.started}</dt>
             <dd>{formatDate(loan.start_date)}</dd>
           </div>
           <div className="meta-row">
-            <dt>Agreed return</dt>
-            <dd>{loan.due_date ? formatDate(loan.due_date) : 'Open-ended'}</dd>
+            <dt>{t.loanDetail.agreedReturn}</dt>
+            <dd>{loan.due_date ? formatDate(loan.due_date) : t.loanDetail.openEnded}</dd>
           </div>
           {loan.returned_date && loan.status !== 'active' ? (
             <div className="meta-row">
-              <dt>{loan.status === 'lost' ? 'Written off' : 'Returned'}</dt>
+              <dt>{loan.status === 'lost' ? t.loanDetail.writtenOff : t.loanDetail.returned}</dt>
               <dd>{formatDate(loan.returned_date)}</dd>
             </div>
           ) : null}
           {item ? (
             <div className="meta-row">
-              <dt>Item</dt>
+              <dt>{t.loanDetail.item}</dt>
               <dd>
                 <Link className="link" to={`/items/${item.id}`}>
                   {item.name}
@@ -205,18 +199,15 @@ export function LoanDetail() {
       {loan.notes ? (
         <section className="section">
           <div className="section__head">
-            <h2>Agreement &amp; notes</h2>
+            <h2>{t.loanDetail.agreementAndNotes}</h2>
           </div>
           <div className="notes">{loan.notes}</div>
         </section>
       ) : null}
 
       {confirming ? (
-        <Modal title="Delete this loan?" onClose={() => setConfirming(false)}>
-          <p>
-            The item and the person stay — only this loan record goes. This cannot be
-            undone.
-          </p>
+        <Modal title={t.loanDetail.deleteTitle} onClose={() => setConfirming(false)}>
+          <p>{t.loanDetail.deleteBody}</p>
           <div className="btn-row">
             <button
               type="button"
@@ -224,7 +215,7 @@ export function LoanDetail() {
               onClick={handleDelete}
               disabled={busy}
             >
-              {busy ? 'Deleting…' : 'Delete loan'}
+              {busy ? t.common.deleting : t.loanDetail.deleteLoanButton}
             </button>
             <button
               type="button"
@@ -232,7 +223,7 @@ export function LoanDetail() {
               onClick={() => setConfirming(false)}
               disabled={busy}
             >
-              Cancel
+              {t.common.cancel}
             </button>
           </div>
         </Modal>
