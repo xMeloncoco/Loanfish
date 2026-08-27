@@ -75,6 +75,15 @@ PocketBase admin UI and just sign in.
 `VITE_POCKETBASE_URL` is baked in at build time, so set it before building rather
 than after.
 
+- **HTTPS**, if the app is deployed somewhere served over https (Vercel, Netlify,
+  etc). Browsers block `http://` requests from an `https://` page as mixed
+  content, so `VITE_POCKETBASE_URL` must point at an `https://` PocketBase URL —
+  make sure your PocketBase host actually terminates TLS (e.g. behind a reverse
+  proxy like Caddy/Traefik with a cert) rather than only listening on plain
+  `http://`. As a safety net, the app upgrades an `http://` URL to `https://` at
+  runtime when the page itself is loaded over https, but that only helps if the
+  PocketBase host accepts https connections in the first place.
+
 ## Layout
 
 ```

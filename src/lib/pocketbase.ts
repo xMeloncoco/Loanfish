@@ -1,7 +1,15 @@
 import PocketBase from 'pocketbase'
 import type { RecordModel } from 'pocketbase'
 
-const url = import.meta.env.VITE_POCKETBASE_URL ?? 'http://127.0.0.1:8090'
+let url = import.meta.env.VITE_POCKETBASE_URL ?? 'http://127.0.0.1:8090'
+
+// Browsers block http:// requests from an https:// page as mixed content.
+// If VITE_POCKETBASE_URL was left on http:// (easy to miss when only the
+// PocketBase host, not the scheme, changes between environments), upgrade
+// it to https:// so the app keeps working instead of failing every request.
+if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+  url = url.replace(/^http:\/\//, 'https://')
+}
 
 export const pb = new PocketBase(url)
 
