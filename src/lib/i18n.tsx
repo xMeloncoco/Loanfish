@@ -17,6 +17,7 @@ interface Strings {
   common: {
     save: string
     saving: string
+    adding: string
     cancel: string
     edit: string
     delete: string
@@ -31,6 +32,7 @@ interface Strings {
     home: string
     items: string
     people: string
+    loans: string
     history: string
   }
   status: Record<LoanStatus, string>
@@ -167,12 +169,10 @@ interface Strings {
     couldNotSave: string
     newLoanTitle: string
     editLoanTitle: string
-    needsItemAndPersonTitle: string
-    needBoth: string
-    needItem: string
-    needPerson: string
-    addAnItem: string
-    addAPerson: string
+    quickAddItemTitle: string
+    quickAddPersonTitle: string
+    couldNotAddItem: string
+    couldNotAddPerson: string
     whichWay: string
     lentItOut: string
     borrowedIt: string
@@ -220,7 +220,7 @@ interface Strings {
     deleteBody: string
     deleteLoanButton: string
   }
-  history: {
+  loansPage: {
     title: string
     subtitle: string
     loanButton: string
@@ -234,6 +234,17 @@ interface Strings {
     noLoansTitle: string
     noLoansBody: string
     noMatchTitle: string
+  }
+  history: {
+    title: string
+    subtitle: string
+    couldNotLoad: string
+    nothingYetTitle: string
+    nothingYetBody: string
+    eventCreated: string
+    eventReturned: string
+    eventLost: string
+    deletedItem: string
   }
   login: {
     tagline: string
@@ -256,6 +267,7 @@ const en: Strings = {
   common: {
     save: 'Save',
     saving: 'Saving…',
+    adding: 'Adding…',
     cancel: 'Cancel',
     edit: 'Edit',
     delete: 'Delete',
@@ -270,6 +282,7 @@ const en: Strings = {
     home: 'Home',
     items: 'Items',
     people: 'People',
+    loans: 'Loans',
     history: 'History',
   },
   status: {
@@ -418,12 +431,10 @@ const en: Strings = {
     couldNotSave: 'Could not save the loan.',
     newLoanTitle: 'New loan',
     editLoanTitle: 'Edit loan',
-    needsItemAndPersonTitle: 'A loan needs an item and a person',
-    needBoth: 'Add at least one item and one person first.',
-    needItem: 'Add an item first.',
-    needPerson: 'Add a person first.',
-    addAnItem: 'Add an item',
-    addAPerson: 'Add a person',
+    quickAddItemTitle: 'Add an item',
+    quickAddPersonTitle: 'Add a person',
+    couldNotAddItem: 'Could not add the item.',
+    couldNotAddPerson: 'Could not add the person.',
     whichWay: 'Which way?',
     lentItOut: 'I lent it out',
     borrowedIt: 'I borrowed it',
@@ -472,9 +483,9 @@ const en: Strings = {
     deleteBody: 'The item and the person stay — only this loan record goes. This cannot be undone.',
     deleteLoanButton: 'Delete loan',
   },
-  history: {
-    title: 'History',
-    subtitle: 'Every loan you have recorded.',
+  loansPage: {
+    title: 'Loans',
+    subtitle: 'Everything you have out or holding, active or resolved.',
     loanButton: 'Loan',
     couldNotLoad: 'Could not load your loans.',
     filterAll: 'All',
@@ -484,8 +495,20 @@ const en: Strings = {
     filterLentOut: 'Lent out',
     filterBorrowed: 'Borrowed',
     noLoansTitle: 'No loans yet',
-    noLoansBody: 'Once you record a loan it stays here, even after it comes back.',
+    noLoansBody:
+      'Record a loan to start keeping track — you can add the item and person for it right from that form.',
     noMatchTitle: 'Nothing in this filter',
+  },
+  history: {
+    title: 'History',
+    subtitle: 'Everything that has happened to your loans, newest first.',
+    couldNotLoad: 'Could not load your loan history.',
+    nothingYetTitle: 'Nothing yet',
+    nothingYetBody: 'Record a loan on the Loans page and its story starts showing up here.',
+    eventCreated: 'Loan recorded',
+    eventReturned: 'Marked returned',
+    eventLost: 'Marked lost',
+    deletedItem: 'Deleted item',
   },
   login: {
     tagline: 'Never lose track of who has your stuff.',
@@ -508,6 +531,7 @@ const nl: Strings = {
   common: {
     save: 'Opslaan',
     saving: 'Opslaan…',
+    adding: 'Toevoegen…',
     cancel: 'Annuleren',
     edit: 'Bewerken',
     delete: 'Verwijderen',
@@ -522,6 +546,7 @@ const nl: Strings = {
     home: 'Start',
     items: 'Spullen',
     people: 'Mensen',
+    loans: 'Leningen',
     history: 'Geschiedenis',
   },
   status: {
@@ -672,12 +697,10 @@ const nl: Strings = {
     couldNotSave: 'Kon de lening niet opslaan.',
     newLoanTitle: 'Nieuwe lening',
     editLoanTitle: 'Lening bewerken',
-    needsItemAndPersonTitle: 'Een lening heeft een item en een persoon nodig',
-    needBoth: 'Voeg eerst minstens één item en één persoon toe.',
-    needItem: 'Voeg eerst een item toe.',
-    needPerson: 'Voeg eerst een persoon toe.',
-    addAnItem: 'Item toevoegen',
-    addAPerson: 'Persoon toevoegen',
+    quickAddItemTitle: 'Item toevoegen',
+    quickAddPersonTitle: 'Persoon toevoegen',
+    couldNotAddItem: 'Kon het item niet toevoegen.',
+    couldNotAddPerson: 'Kon de persoon niet toevoegen.',
     whichWay: 'Welke kant op?',
     lentItOut: 'Ik heb het uitgeleend',
     borrowedIt: 'Ik heb het geleend',
@@ -727,9 +750,9 @@ const nl: Strings = {
       'Het item en de persoon blijven bestaan — alleen dit leenrecord verdwijnt. Dit kan niet ongedaan worden gemaakt.',
     deleteLoanButton: 'Lening verwijderen',
   },
-  history: {
-    title: 'Geschiedenis',
-    subtitle: 'Alle leningen die je hebt vastgelegd.',
+  loansPage: {
+    title: 'Leningen',
+    subtitle: 'Alles wat je hebt uitstaan of onder je hebt, actief of afgehandeld.',
     loanButton: 'Lening',
     couldNotLoad: 'Kon je leningen niet laden.',
     filterAll: 'Alles',
@@ -739,8 +762,20 @@ const nl: Strings = {
     filterLentOut: 'Uitgeleend',
     filterBorrowed: 'Geleend',
     noLoansTitle: 'Nog geen leningen',
-    noLoansBody: 'Zodra je een lening vastlegt, blijft die hier staan, ook nadat het is teruggekomen.',
+    noLoansBody:
+      'Leg een lening vast om te beginnen met bijhouden — je kunt het item en de persoon meteen vanuit dat formulier toevoegen.',
     noMatchTitle: 'Niets in dit filter',
+  },
+  history: {
+    title: 'Geschiedenis',
+    subtitle: 'Alles wat er met je leningen is gebeurd, nieuwste eerst.',
+    couldNotLoad: 'Kon je leengeschiedenis niet laden.',
+    nothingYetTitle: 'Nog niets',
+    nothingYetBody: 'Leg een lening vast op de Leningen-pagina en het verhaal verschijnt hier.',
+    eventCreated: 'Lening vastgelegd',
+    eventReturned: 'Gemarkeerd als teruggekregen',
+    eventLost: 'Gemarkeerd als kwijt',
+    deletedItem: 'Verwijderd item',
   },
   login: {
     tagline: 'Verlies nooit meer uit het oog wie jouw spullen heeft.',

@@ -105,3 +105,12 @@ export const ArrowInIcon = (p: IconProps) => (
     <path d="M4 4v16" />
   </svg>
 )
+
+export const SwapIcon = (p: IconProps) => (
+  <svg {...base} {...p}>
+    <path d="m7 4 4 4-4 4" />
+    <path d="M3 8h8" />
+    <path d="m17 20-4-4 4-4" />
+    <path d="M21 16h-8" />
+  </svg>
+)
