@@ -5,6 +5,7 @@ import { Spinner } from './components/ui'
 import { Login } from './pages/Login'
 import { Dashboard } from './pages/Dashboard'
 import { Items } from './pages/Items'
+import { Loans } from './pages/Loans'
 import { ItemDetail } from './pages/ItemDetail'
 import { ItemForm } from './pages/ItemForm'
 import { Persons } from './pages/Persons'
@@ -35,6 +36,7 @@ function Routing() {
         <Route path="persons/:id" element={<PersonDetail />} />
         <Route path="persons/:id/edit" element={<PersonForm />} />
 
+        <Route path="loans" element={<Loans />} />
         <Route path="loans/new" element={<LoanForm />} />
         <Route path="loans/:id" element={<LoanDetail />} />
         <Route path="loans/:id/edit" element={<LoanForm />} />

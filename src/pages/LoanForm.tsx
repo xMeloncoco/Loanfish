@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
+  createItem,
   createLoan,
+  createPerson,
   getLoan,
   listItems,
   listPersons,
@@ -11,7 +13,7 @@ import {
 import { useAuth } from '../lib/auth'
 import { errorMessage, toDateInput, todayInput, toPbDate } from '../lib/pocketbase'
 import type { ItemRecord, LoanDirection, PersonRecord } from '../lib/types'
-import { Alert, Empty, Spinner } from '../components/ui'
+import { Alert, Modal, Spinner } from '../components/ui'
 import { BackLink } from '../components/BackLink'
 
 export function LoanForm() {
@@ -34,6 +36,17 @@ export function LoanForm() {
   const [dueDate, setDueDate] = useState('')
   const [notes, setNotes] = useState('')
   const [adoptOwner, setAdoptOwner] = useState(true)
+
+  const [showItemModal, setShowItemModal] = useState(false)
+  const [itemModalName, setItemModalName] = useState('')
+  const [itemModalOwner, setItemModalOwner] = useState('')
+  const [itemModalBusy, setItemModalBusy] = useState(false)
+  const [itemModalError, setItemModalError] = useState('')
+
+  const [showPersonModal, setShowPersonModal] = useState(false)
+  const [personModalName, setPersonModalName] = useState('')
+  const [personModalBusy, setPersonModalBusy] = useState(false)
+  const [personModalError, setPersonModalError] = useState('')
 
   useEffect(() => {
     if (!user) return
@@ -125,39 +138,53 @@ export function LoanForm() {
     }
   }
 
-  if (loading) return <Spinner />
-
-  if (!editing && (items.length === 0 || persons.length === 0)) {
-    return (
-      <>
-        <BackLink />
-        <div className="page-head">
-          <div className="page-head__text">
-            <h1>New loan</h1>
-          </div>
-        </div>
-        <Empty icon="🧩" title="A loan needs an item and a person">
-          {items.length === 0 && persons.length === 0
-            ? 'Add at least one item and one person first.'
-            : items.length === 0
-              ? 'Add an item first.'
-              : 'Add a person first.'}
-        </Empty>
-        <div className="btn-row" style={{ marginTop: 16 }}>
-          {items.length === 0 ? (
-            <Link className="btn" to="/items/new">
-              Add an item
-            </Link>
-          ) : null}
-          {persons.length === 0 ? (
-            <Link className="btn btn--ghost" to="/persons/new">
-              Add a person
-            </Link>
-          ) : null}
-        </div>
-      </>
-    )
+  async function handleCreateItem(event: FormEvent) {
+    event.preventDefault()
+    if (!user) return
+    setItemModalBusy(true)
+    setItemModalError('')
+    try {
+      const created = await createItem({
+        user: user.id,
+        name: itemModalName.trim(),
+        description: '',
+        owner_person: itemModalOwner,
+      })
+      setItems(await listItems(user.id))
+      setItemId(created.id)
+      setShowItemModal(false)
+      setItemModalName('')
+      setItemModalOwner('')
+    } catch (err) {
+      setItemModalError(errorMessage(err, 'Could not add the item.'))
+    } finally {
+      setItemModalBusy(false)
+    }
   }
+
+  async function handleCreatePerson(event: FormEvent) {
+    event.preventDefault()
+    if (!user) return
+    setPersonModalBusy(true)
+    setPersonModalError('')
+    try {
+      const created = await createPerson({
+        user: user.id,
+        name: personModalName.trim(),
+        notes: '',
+      })
+      setPersons(await listPersons(user.id))
+      setPersonId(created.id)
+      setShowPersonModal(false)
+      setPersonModalName('')
+    } catch (err) {
+      setPersonModalError(errorMessage(err, 'Could not add the person.'))
+    } finally {
+      setPersonModalBusy(false)
+    }
+  }
+
+  if (loading) return <Spinner />
 
   return (
     <>
@@ -211,7 +238,16 @@ export function LoanForm() {
             ))}
           </select>
           <span className="field__hint">
-            Not in the list? <Link className="link" to="/items/new">Add an item</Link>.
+            Not in the list?{' '}
+            <button
+              type="button"
+              className="link"
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+              onClick={() => setShowItemModal(true)}
+            >
+              Add an item
+            </button>
+            .
           </span>
         </div>
 
@@ -234,7 +270,16 @@ export function LoanForm() {
             ))}
           </select>
           <span className="field__hint">
-            Not in the list? <Link className="link" to="/persons/new">Add a person</Link>.
+            Not in the list?{' '}
+            <button
+              type="button"
+              className="link"
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+              onClick={() => setShowPersonModal(true)}
+            >
+              Add a person
+            </button>
+            .
           </span>
         </div>
 
@@ -313,6 +358,95 @@ export function LoanForm() {
           </button>
         </div>
       </form>
+
+      {showItemModal ? (
+        <Modal title="Add an item" onClose={() => setShowItemModal(false)}>
+          <form className="form" onSubmit={handleCreateItem}>
+            <div className="field">
+              <label className="field__label" htmlFor="quick-item-name">
+                Name
+              </label>
+              <input
+                id="quick-item-name"
+                className="input"
+                value={itemModalName}
+                onChange={(e) => setItemModalName(e.target.value)}
+                placeholder="Drill, Dune (book), camping stove…"
+                maxLength={120}
+                autoFocus
+                required
+              />
+            </div>
+            <div className="field">
+              <label className="field__label" htmlFor="quick-item-owner">
+                Owner
+              </label>
+              <select
+                id="quick-item-owner"
+                className="select"
+                value={itemModalOwner}
+                onChange={(e) => setItemModalOwner(e.target.value)}
+              >
+                <option value="">Me</option>
+                {persons.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Alert>{itemModalError}</Alert>
+            <div className="btn-row">
+              <button className="btn" type="submit" disabled={itemModalBusy}>
+                {itemModalBusy ? 'Adding…' : 'Add item'}
+              </button>
+              <button
+                className="btn btn--ghost"
+                type="button"
+                onClick={() => setShowItemModal(false)}
+                disabled={itemModalBusy}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
+
+      {showPersonModal ? (
+        <Modal title="Add a person" onClose={() => setShowPersonModal(false)}>
+          <form className="form" onSubmit={handleCreatePerson}>
+            <div className="field">
+              <label className="field__label" htmlFor="quick-person-name">
+                Name
+              </label>
+              <input
+                id="quick-person-name"
+                className="input"
+                value={personModalName}
+                onChange={(e) => setPersonModalName(e.target.value)}
+                maxLength={100}
+                autoFocus
+                required
+              />
+            </div>
+            <Alert>{personModalError}</Alert>
+            <div className="btn-row">
+              <button className="btn" type="submit" disabled={personModalBusy}>
+                {personModalBusy ? 'Adding…' : 'Add person'}
+              </button>
+              <button
+                className="btn btn--ghost"
+                type="button"
+                onClick={() => setShowPersonModal(false)}
+                disabled={personModalBusy}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
     </>
   )
 }

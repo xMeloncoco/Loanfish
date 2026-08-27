@@ -2,49 +2,61 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listLoans } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { errorMessage } from '../lib/pocketbase'
+import { errorMessage, formatDate } from '../lib/pocketbase'
 import type { LoanRecord } from '../lib/types'
-import { LoanCard } from '../components/LoanCard'
-import { PlusIcon } from '../components/Icons'
 import { Alert, Empty, Spinner } from '../components/ui'
+import { ArrowInIcon, ArrowOutIcon, ChevronRightIcon } from '../components/Icons'
 
-type Filter = 'all' | 'active' | 'returned' | 'lost' | 'lent_out' | 'borrowed'
+type EventKind = 'created' | 'returned' | 'lost'
 
-const FILTERS: [Filter, string][] = [
-  ['all', 'All'],
-  ['active', 'Still out'],
-  ['returned', 'Returned'],
-  ['lost', 'Lost'],
-  ['lent_out', 'Lent out'],
-  ['borrowed', 'Borrowed'],
-]
+interface LoanEvent {
+  id: string
+  date: string
+  loan: LoanRecord
+  kind: EventKind
+}
+
+const KIND_LABEL: Record<EventKind, string> = {
+  created: 'Loan recorded',
+  returned: 'Marked returned',
+  lost: 'Marked lost',
+}
+
+// Loans carry no separate audit log — this page reconstructs a timeline from
+// the fields every loan already has: when it started, and if it has been
+// resolved, when that happened. Re-opening a loan clears `returned_date`, so
+// a resolution event simply stops appearing once a loan is active again.
+function buildEvents(loans: LoanRecord[]): LoanEvent[] {
+  const events: LoanEvent[] = []
+  for (const loan of loans) {
+    events.push({ id: `${loan.id}-created`, date: loan.start_date, loan, kind: 'created' })
+    if (loan.status !== 'active' && loan.returned_date) {
+      events.push({
+        id: `${loan.id}-resolved`,
+        date: loan.returned_date,
+        loan,
+        kind: loan.status === 'lost' ? 'lost' : 'returned',
+      })
+    }
+  }
+  return events.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+}
 
 export function History() {
   const { user } = useAuth()
   const [loans, setLoans] = useState<LoanRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [filter, setFilter] = useState<Filter>('all')
 
   useEffect(() => {
     if (!user) return
     listLoans(user.id)
       .then(setLoans)
-      .catch((err) => setError(errorMessage(err, 'Could not load your loans.')))
+      .catch((err) => setError(errorMessage(err, 'Could not load your loan history.')))
       .finally(() => setLoading(false))
   }, [user])
 
-  const visible = useMemo(() => {
-    switch (filter) {
-      case 'all':
-        return loans
-      case 'lent_out':
-      case 'borrowed':
-        return loans.filter((loan) => loan.direction === filter)
-      default:
-        return loans.filter((loan) => loan.status === filter)
-    }
-  }, [loans, filter])
+  const events = useMemo(() => buildEvents(loans), [loans])
 
   if (loading) return <Spinner />
 
@@ -53,43 +65,42 @@ export function History() {
       <div className="page-head">
         <div className="page-head__text">
           <h1>History</h1>
-          <p>Every loan you have recorded.</p>
+          <p>Everything that has happened to your loans, newest first.</p>
         </div>
-        <Link to="/loans/new" className="btn btn--sm">
-          <PlusIcon />
-          Loan
-        </Link>
       </div>
 
       <Alert>{error}</Alert>
 
-      {loans.length > 0 ? (
-        <div className="filters">
-          {FILTERS.map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              className="filter"
-              aria-pressed={filter === value}
-              onClick={() => setFilter(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      {loans.length === 0 ? (
-        <Empty icon="🗂️" title="No loans yet">
-          Once you record a loan it stays here, even after it comes back.
+      {events.length === 0 ? (
+        <Empty icon="🗂️" title="Nothing yet">
+          Record a loan on the Loans page and its story starts showing up here.
         </Empty>
-      ) : visible.length === 0 ? (
-        <Empty icon="🔍" title="Nothing in this filter" />
       ) : (
         <div className="stack">
-          {visible.map((loan) => (
-            <LoanCard key={loan.id} loan={loan} />
-          ))}
+          {events.map((event) => {
+            const item = event.loan.expand?.item
+            const person = event.loan.expand?.person
+            const lentOut = event.loan.direction === 'lent_out'
+            return (
+              <Link key={event.id} to={`/loans/${event.loan.id}`} className="tile">
+                {lentOut ? (
+                  <ArrowOutIcon className="section__icon" />
+                ) : (
+                  <ArrowInIcon className="section__icon" />
+                )}
+                <div className="tile__body">
+                  <div className="tile__title">{KIND_LABEL[event.kind]}</div>
+                  <div className="tile__sub">
+                    {item?.name ?? 'Deleted item'}
+                    {person ? ` · ${person.name}` : ''} · {formatDate(event.date)}
+                  </div>
+                </div>
+                <span className="chev">
+                  <ChevronRightIcon />
+                </span>
+              </Link>
+            )
+          })}
         </div>
       )}
     </>
