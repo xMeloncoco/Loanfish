@@ -4,35 +4,37 @@ import { listLoans } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { errorMessage } from '../lib/pocketbase'
 import type { LoanRecord } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { LoanCard } from '../components/LoanCard'
 import { PlusIcon } from '../components/Icons'
 import { Alert, Empty, Spinner } from '../components/ui'
 
 type Filter = 'all' | 'active' | 'returned' | 'lost' | 'lent_out' | 'borrowed'
 
-const FILTERS: [Filter, string][] = [
-  ['all', 'All'],
-  ['active', 'Still out'],
-  ['returned', 'Returned'],
-  ['lost', 'Lost'],
-  ['lent_out', 'Lent out'],
-  ['borrowed', 'Borrowed'],
-]
-
 export function Loans() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [loans, setLoans] = useState<LoanRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
 
+  const FILTERS: [Filter, string][] = [
+    ['all', t.loansPage.filterAll],
+    ['active', t.loansPage.filterActive],
+    ['returned', t.loansPage.filterReturned],
+    ['lost', t.loansPage.filterLost],
+    ['lent_out', t.loansPage.filterLentOut],
+    ['borrowed', t.loansPage.filterBorrowed],
+  ]
+
   useEffect(() => {
     if (!user) return
     listLoans(user.id)
       .then(setLoans)
-      .catch((err) => setError(errorMessage(err, 'Could not load your loans.')))
+      .catch((err) => setError(errorMessage(err, t.loansPage.couldNotLoad)))
       .finally(() => setLoading(false))
-  }, [user])
+  }, [user, t])
 
   const visible = useMemo(() => {
     switch (filter) {
@@ -52,12 +54,12 @@ export function Loans() {
     <>
       <div className="page-head">
         <div className="page-head__text">
-          <h1>Loans</h1>
-          <p>Everything you have out or holding, active or resolved.</p>
+          <h1>{t.loansPage.title}</h1>
+          <p>{t.loansPage.subtitle}</p>
         </div>
         <Link to="/loans/new" className="btn btn--sm">
           <PlusIcon />
-          Loan
+          {t.loansPage.loanButton}
         </Link>
       </div>
 
@@ -80,12 +82,11 @@ export function Loans() {
       ) : null}
 
       {loans.length === 0 ? (
-        <Empty icon="🗂️" title="No loans yet">
-          Record a loan to start keeping track — you can add the item and person
-          for it right from that form.
+        <Empty icon="🗂️" title={t.loansPage.noLoansTitle}>
+          {t.loansPage.noLoansBody}
         </Empty>
       ) : visible.length === 0 ? (
-        <Empty icon="🔍" title="Nothing in this filter" />
+        <Empty icon="🔍" title={t.loansPage.noMatchTitle} />
       ) : (
         <div className="stack">
           {visible.map((loan) => (

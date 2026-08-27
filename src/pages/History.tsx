@@ -4,6 +4,7 @@ import { listLoans } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { errorMessage, formatDate } from '../lib/pocketbase'
 import type { LoanRecord } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { Alert, Empty, Spinner } from '../components/ui'
 import { ArrowInIcon, ArrowOutIcon, ChevronRightIcon } from '../components/Icons'
 
@@ -14,12 +15,6 @@ interface LoanEvent {
   date: string
   loan: LoanRecord
   kind: EventKind
-}
-
-const KIND_LABEL: Record<EventKind, string> = {
-  created: 'Loan recorded',
-  returned: 'Marked returned',
-  lost: 'Marked lost',
 }
 
 // Loans carry no separate audit log — this page reconstructs a timeline from
@@ -44,17 +39,24 @@ function buildEvents(loans: LoanRecord[]): LoanEvent[] {
 
 export function History() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [loans, setLoans] = useState<LoanRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const KIND_LABEL: Record<EventKind, string> = {
+    created: t.history.eventCreated,
+    returned: t.history.eventReturned,
+    lost: t.history.eventLost,
+  }
 
   useEffect(() => {
     if (!user) return
     listLoans(user.id)
       .then(setLoans)
-      .catch((err) => setError(errorMessage(err, 'Could not load your loan history.')))
+      .catch((err) => setError(errorMessage(err, t.history.couldNotLoad)))
       .finally(() => setLoading(false))
-  }, [user])
+  }, [user, t])
 
   const events = useMemo(() => buildEvents(loans), [loans])
 
@@ -64,16 +66,16 @@ export function History() {
     <>
       <div className="page-head">
         <div className="page-head__text">
-          <h1>History</h1>
-          <p>Everything that has happened to your loans, newest first.</p>
+          <h1>{t.history.title}</h1>
+          <p>{t.history.subtitle}</p>
         </div>
       </div>
 
       <Alert>{error}</Alert>
 
       {events.length === 0 ? (
-        <Empty icon="🗂️" title="Nothing yet">
-          Record a loan on the Loans page and its story starts showing up here.
+        <Empty icon="🗂️" title={t.history.nothingYetTitle}>
+          {t.history.nothingYetBody}
         </Empty>
       ) : (
         <div className="stack">
@@ -91,7 +93,7 @@ export function History() {
                 <div className="tile__body">
                   <div className="tile__title">{KIND_LABEL[event.kind]}</div>
                   <div className="tile__sub">
-                    {item?.name ?? 'Deleted item'}
+                    {item?.name ?? t.history.deletedItem}
                     {person ? ` · ${person.name}` : ''} · {formatDate(event.date)}
                   </div>
                 </div>

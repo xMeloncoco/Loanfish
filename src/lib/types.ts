@@ -57,14 +57,3 @@ export function daysUntilDue(loan: LoanRecord): number | null {
   today.setHours(0, 0, 0, 0)
   return Math.round((due.getTime() - today.getTime()) / 86_400_000)
 }
-
-export const STATUS_LABELS: Record<LoanStatus, string> = {
-  active: 'Out',
-  returned: 'Returned',
-  lost: 'Lost',
-}
-
-export const DIRECTION_LABELS: Record<LoanDirection, string> = {
-  lent_out: 'Lent out',
-  borrowed: 'Borrowed',
-}

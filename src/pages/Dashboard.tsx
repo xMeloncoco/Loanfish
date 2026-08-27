@@ -4,12 +4,14 @@ import { listActiveLoans } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { errorMessage } from '../lib/pocketbase'
 import { isOverdue, type LoanRecord } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { LoanCard } from '../components/LoanCard'
 import { ArrowInIcon, ArrowOutIcon, PlusIcon } from '../components/Icons'
 import { Alert, Empty, Spinner } from '../components/ui'
 
 export function Dashboard() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [borrowed, setBorrowed] = useState<LoanRecord[]>([])
   const [lentOut, setLentOut] = useState<LoanRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,11 +28,11 @@ export function Dashboard() {
       setBorrowed(sortLoans(borrowedLoans))
       setLentOut(sortLoans(lentLoans))
     } catch (err) {
-      setError(errorMessage(err, 'Could not load your loans.'))
+      setError(errorMessage(err, t.dashboard.couldNotLoad))
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, t])
 
   useEffect(() => {
     void load()
@@ -44,16 +46,12 @@ export function Dashboard() {
     <>
       <div className="page-head">
         <div className="page-head__text">
-          <h1>Hi{user?.name ? `, ${user.name.split(' ')[0]}` : ''} 👋</h1>
-          <p>
-            {overdueCount > 0
-              ? `${overdueCount} ${overdueCount === 1 ? 'loan is' : 'loans are'} past the agreed date.`
-              : 'Everything is on schedule.'}
-          </p>
+          <h1>{t.dashboard.greeting(user?.name?.split(' ')[0])}</h1>
+          <p>{overdueCount > 0 ? t.dashboard.overdue(overdueCount) : t.dashboard.onSchedule}</p>
         </div>
         <Link to="/loans/new" className="btn btn--sm">
           <PlusIcon />
-          Loan
+          {t.dashboard.loanButton}
         </Link>
       </div>
 
@@ -62,12 +60,12 @@ export function Dashboard() {
       <section className="section">
         <div className="section__head">
           <ArrowInIcon className="section__icon" />
-          <h2>Borrowed from others</h2>
+          <h2>{t.dashboard.borrowedFromOthers}</h2>
           <span className="section__count">{borrowed.length}</span>
         </div>
         {borrowed.length === 0 ? (
-          <Empty icon="📥" title="Nothing borrowed">
-            Things you have taken from other people show up here.
+          <Empty icon="📥" title={t.dashboard.nothingBorrowedTitle}>
+            {t.dashboard.nothingBorrowedBody}
           </Empty>
         ) : (
           <div className="stack">
@@ -81,12 +79,12 @@ export function Dashboard() {
       <section className="section">
         <div className="section__head">
           <ArrowOutIcon className="section__icon" />
-          <h2>Lent out to others</h2>
+          <h2>{t.dashboard.lentOutToOthers}</h2>
           <span className="section__count">{lentOut.length}</span>
         </div>
         {lentOut.length === 0 ? (
-          <Empty icon="📤" title="Nothing lent out">
-            Record a loan when you hand something over, so you remember who has it.
+          <Empty icon="📤" title={t.dashboard.nothingLentTitle}>
+            {t.dashboard.nothingLentBody}
           </Empty>
         ) : (
           <div className="stack">

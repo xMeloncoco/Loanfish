@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
 import { errorMessage } from '../lib/pocketbase'
+import { useI18n } from '../lib/i18n'
 import { Alert } from '../components/ui'
 
 export function Login() {
   const { login, register } = useAuth()
+  const { t } = useI18n()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -28,9 +30,7 @@ export function Login() {
       setError(
         errorMessage(
           err,
-          registering
-            ? 'Could not create the account.'
-            : 'Wrong email or password.',
+          registering ? t.login.couldNotCreateAccount : t.login.wrongCredentials,
         ),
       )
     } finally {
@@ -46,7 +46,7 @@ export function Login() {
             🐟
           </div>
           <h1>Loanfish</h1>
-          <p>Never lose track of who has your stuff.</p>
+          <p>{t.login.tagline}</p>
         </div>
 
         <div className="card card--pad">
@@ -54,7 +54,7 @@ export function Login() {
             {registering ? (
               <div className="field">
                 <label className="field__label" htmlFor="name">
-                  Your name
+                  {t.login.yourName}
                 </label>
                 <input
                   id="name"
@@ -69,7 +69,7 @@ export function Login() {
 
             <div className="field">
               <label className="field__label" htmlFor="email">
-                Email
+                {t.login.email}
               </label>
               <input
                 id="email"
@@ -85,7 +85,7 @@ export function Login() {
 
             <div className="field">
               <label className="field__label" htmlFor="password">
-                Password
+                {t.login.password}
               </label>
               <input
                 id="password"
@@ -98,20 +98,20 @@ export function Login() {
                 required
               />
               {registering ? (
-                <span className="field__hint">At least 8 characters.</span>
+                <span className="field__hint">{t.login.passwordHint}</span>
               ) : null}
             </div>
 
             <Alert>{error}</Alert>
 
             <button className="btn btn--block" type="submit" disabled={busy}>
-              {busy ? 'Please wait…' : registering ? 'Create account' : 'Sign in'}
+              {busy ? t.login.pleaseWait : registering ? t.login.createAccount : t.login.signIn}
             </button>
           </form>
         </div>
 
         <p className="auth__switch">
-          {registering ? 'Already have an account?' : 'No account yet?'}{' '}
+          {registering ? t.login.alreadyHaveAccount : t.login.noAccountYet}{' '}
           <button
             type="button"
             onClick={() => {
@@ -119,7 +119,7 @@ export function Login() {
               setError('')
             }}
           >
-            {registering ? 'Sign in' : 'Create one'}
+            {registering ? t.login.signIn : t.login.createOne}
           </button>
         </p>
       </div>

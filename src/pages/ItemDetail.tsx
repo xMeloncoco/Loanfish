@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { deleteItem, getItem, listLoansForItem } from '../lib/api'
 import { errorMessage, fileUrl } from '../lib/pocketbase'
 import type { ItemRecord, LoanRecord } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { LoanCard } from '../components/LoanCard'
 import { TrashIcon } from '../components/Icons'
 import { Alert, Empty, Modal, Spinner } from '../components/ui'
@@ -12,6 +13,7 @@ import { Thumb } from '../components/Thumb'
 export function ItemDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t } = useI18n()
   const [item, setItem] = useState<ItemRecord | null>(null)
   const [loans, setLoans] = useState<LoanRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -27,9 +29,9 @@ export function ItemDetail() {
         setItem(record)
         setLoans(history)
       })
-      .catch((err) => setError(errorMessage(err, 'Could not load this item.')))
+      .catch((err) => setError(errorMessage(err, t.itemDetail.couldNotLoad)))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [id, t])
 
   async function handleDelete() {
     if (!id) return
@@ -38,7 +40,7 @@ export function ItemDetail() {
       await deleteItem(id)
       navigate('/items', { replace: true })
     } catch (err) {
-      setError(errorMessage(err, 'Could not delete the item.'))
+      setError(errorMessage(err, t.itemDetail.couldNotDelete))
       setBusy(false)
       setConfirming(false)
     }
@@ -49,7 +51,7 @@ export function ItemDetail() {
     return (
       <>
         <BackLink />
-        <Alert>{error || 'Item not found.'}</Alert>
+        <Alert>{error || t.itemDetail.notFound}</Alert>
       </>
     )
   }
@@ -71,10 +73,10 @@ export function ItemDetail() {
           <div className="detail-head__sub">
             {owner ? (
               <>
-                Belongs to <Link className="link" to={`/persons/${owner.id}`}>{owner.name}</Link>
+                {t.itemDetail.belongsTo} <Link className="link" to={`/persons/${owner.id}`}>{owner.name}</Link>
               </>
             ) : (
-              'Yours'
+              t.itemDetail.yours
             )}
           </div>
         </div>
@@ -85,15 +87,15 @@ export function ItemDetail() {
       <div className="btn-row" style={{ marginBottom: 22 }}>
         {activeLoan ? (
           <Link className="btn" to={`/loans/${activeLoan.id}`}>
-            View current loan
+            {t.itemDetail.viewCurrentLoan}
           </Link>
         ) : (
           <Link className="btn" to={`/loans/new?item=${item.id}`}>
-            Record a loan
+            {t.itemDetail.recordALoan}
           </Link>
         )}
         <Link className="btn btn--ghost" to={`/items/${item.id}/edit`}>
-          Edit
+          {t.common.edit}
         </Link>
         <button
           type="button"
@@ -101,14 +103,14 @@ export function ItemDetail() {
           onClick={() => setConfirming(true)}
         >
           <TrashIcon />
-          Delete
+          {t.common.delete}
         </button>
       </div>
 
       {item.description ? (
         <section className="section">
           <div className="section__head">
-            <h2>Description</h2>
+            <h2>{t.itemDetail.description}</h2>
           </div>
           <div className="notes">{item.description}</div>
         </section>
@@ -116,12 +118,12 @@ export function ItemDetail() {
 
       <section className="section">
         <div className="section__head">
-          <h2>Loan history</h2>
+          <h2>{t.itemDetail.loanHistory}</h2>
           <span className="section__count">{loans.length}</span>
         </div>
         {loans.length === 0 ? (
-          <Empty icon="🗒️" title="Never loaned">
-            This item has not been lent out or borrowed yet.
+          <Empty icon="🗒️" title={t.itemDetail.neverLoanedTitle}>
+            {t.itemDetail.neverLoanedBody}
           </Empty>
         ) : (
           <div className="stack">
@@ -133,11 +135,11 @@ export function ItemDetail() {
       </section>
 
       {confirming ? (
-        <Modal title={`Delete ${item.name}?`} onClose={() => setConfirming(false)}>
+        <Modal title={t.itemDetail.deleteTitle(item.name)} onClose={() => setConfirming(false)}>
           <p>
             {loans.length > 0
-              ? `This also deletes ${loans.length} loan ${loans.length === 1 ? 'record' : 'records'} for this item. It cannot be undone.`
-              : 'This cannot be undone.'}
+              ? t.itemDetail.deleteBodyWithLoans(loans.length)
+              : t.itemDetail.deleteBodySimple}
           </p>
           <div className="btn-row">
             <button
@@ -146,7 +148,7 @@ export function ItemDetail() {
               onClick={handleDelete}
               disabled={busy}
             >
-              {busy ? 'Deleting…' : 'Delete item'}
+              {busy ? t.common.deleting : t.itemDetail.deleteItemButton}
             </button>
             <button
               type="button"
@@ -154,7 +156,7 @@ export function ItemDetail() {
               onClick={() => setConfirming(false)}
               disabled={busy}
             >
-              Keep it
+              {t.itemDetail.keepIt}
             </button>
           </div>
         </Modal>

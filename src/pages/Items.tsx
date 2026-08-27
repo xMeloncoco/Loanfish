@@ -4,6 +4,7 @@ import { listItems } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { errorMessage, fileUrl } from '../lib/pocketbase'
 import type { ItemRecord } from '../lib/types'
+import { useI18n } from '../lib/i18n'
 import { Thumb } from '../components/Thumb'
 import { ChevronRightIcon, PlusIcon } from '../components/Icons'
 import { Alert, Empty, Spinner } from '../components/ui'
@@ -12,6 +13,7 @@ type Owner = 'all' | 'mine' | 'theirs'
 
 export function Items() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [items, setItems] = useState<ItemRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -22,9 +24,9 @@ export function Items() {
     if (!user) return
     listItems(user.id)
       .then(setItems)
-      .catch((err) => setError(errorMessage(err, 'Could not load your items.')))
+      .catch((err) => setError(errorMessage(err, t.items.couldNotLoad)))
       .finally(() => setLoading(false))
-  }, [user])
+  }, [user, t])
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase()
@@ -46,12 +48,12 @@ export function Items() {
     <>
       <div className="page-head">
         <div className="page-head__text">
-          <h1>Items</h1>
-          <p>Everything you track, yours and other people's.</p>
+          <h1>{t.items.title}</h1>
+          <p>{t.items.subtitle}</p>
         </div>
         <Link to="/items/new" className="btn btn--sm">
           <PlusIcon />
-          Item
+          {t.items.itemButton}
         </Link>
       </div>
 
@@ -62,16 +64,16 @@ export function Items() {
           <input
             className="input search"
             type="search"
-            placeholder="Search items…"
+            placeholder={t.items.searchPlaceholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
           <div className="filters">
             {(
               [
-                ['all', 'All'],
-                ['mine', 'Mine'],
-                ['theirs', "Someone else's"],
+                ['all', t.items.filterAll],
+                ['mine', t.items.filterMine],
+                ['theirs', t.items.filterTheirs],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -89,12 +91,12 @@ export function Items() {
       ) : null}
 
       {items.length === 0 ? (
-        <Empty icon="📦" title="No items yet">
-          Add the things you want to keep track of — then record a loan against them.
+        <Empty icon="📦" title={t.items.noItemsTitle}>
+          {t.items.noItemsBody}
         </Empty>
       ) : visible.length === 0 ? (
-        <Empty icon="🔍" title="Nothing matches">
-          Try a different search or filter.
+        <Empty icon="🔍" title={t.items.noMatchTitle}>
+          {t.items.noMatchBody}
         </Empty>
       ) : (
         <div className="stack">
@@ -105,8 +107,8 @@ export function Items() {
                 <div className="tile__title">{item.name}</div>
                 <div className="tile__sub">
                   {item.expand?.owner_person
-                    ? `Belongs to ${item.expand.owner_person.name}`
-                    : 'Yours'}
+                    ? t.items.belongsTo(item.expand.owner_person.name)
+                    : t.items.yours}
                 </div>
               </div>
               <span className="chev">
